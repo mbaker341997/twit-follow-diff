@@ -1,30 +1,46 @@
-import requests
-import os
+from flask import (
+    Blueprint, flash, render_template, request
+)
 import json
-from flask import Flask
-app = Flask(__name__)
+import os
+import requests
 
+bp = Blueprint('follow_diff', __name__)
+
+HATERS_TYPE = 'haters'
+VICTIMS_TYPE = 'victims'
 FOLLOWERS_KEY = "followers"
 FRIENDS_KEY = "friends"
+BASE_TEMPLATE = 'base.html'
+RESULT_TEMPLATE = 'result.html'
 
-@app.route('/')
+@bp.route("/")
 def index():
-    return 'Index Page'
+    return render_template(BASE_TEMPLATE)
 
 
-@app.route('/haters/<username>')
-def get_haters(username):
-    followers = get_account_list("followers", user_name)
-    friends = get_account_list("friends", user_name)
-    they_hate_you = list(set(friends) - set(followers))
-    return get_user_list(you_hate_them)
+@bp.route("/diff")
+def diff():
+    username = request.args.get('username')
+    type = request.args.get('type')
+    error = None
 
-
-@app.route('/victims/<username>')
-def get_victims(username):
-    friends_and_followers = get_friends_and_followers(username)
-    you_hate_them = list(set(friends_and_followers[FOLLOWERS_KEY]) - set(friends_and_followers[FRIENDS_KEY]))
-    return get_user_list(you_hate_them)
+    # TODO: handle rate limit errors gracefully
+    if not username:
+        error = "Username is required."
+    elif not type:
+        error = "Type is required"
+    elif type == HATERS_TYPE:
+        friends_and_followers = get_friends_and_followers(username)
+        they_hate_you = list(set(friends_and_followers[FRIENDS_KEY]) - set(friends_and_followers[FOLLOWERS_KEY]))
+        return render_template(RESULT_TEMPLATE, username=username, result=get_user_list(they_hate_you))
+    elif type == VICTIMS_TYPE:
+        friends_and_followers = get_friends_and_followers(username)
+        you_hate_them = list(set(friends_and_followers[FOLLOWERS_KEY]) - set(friends_and_followers[FRIENDS_KEY]))
+        return render_template(RESULT_TEMPLATE, username=username, result=get_user_list(you_hate_them))
+    else:
+        error = "Invalid account type"
+    return render_template(BASE_TEMPLATE, error=error)
 
 
 # To set your enviornment variables in your terminal run the following line:
@@ -58,7 +74,7 @@ def get_friends_and_followers(username):
 
 
 def get_user_info(user_ids):
-    user_fields = "description"
+    user_fields = "description,profile_image_url"
     url = "https://api.twitter.com/2/users?ids={}&user.fields={}".format(user_ids, user_fields)
     print("Requesting info for users: {}".format(user_ids))
     response = requests.request("GET", url, headers=get_bearer_token_header())
@@ -83,4 +99,4 @@ def get_user_list(user_list):
     for chunk in chunks:
         chunk_string = ",".join(str(id) for id in chunk)
         data += get_user_info(chunk_string)
-    return {"data": data}
+    return {'accounts': data}

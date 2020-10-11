@@ -1,0 +1,17 @@
+body {
+  background-color: black;
+  color: white;
+}
+
+a {
+  color: #61dafb;
+}
+
+.card {
+  background-color: #282c34;
+  width: 20rem;
+}
+
+.card-img-top {
+  max-height: 30rem;
+}
