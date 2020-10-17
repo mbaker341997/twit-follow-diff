@@ -4,7 +4,7 @@ from flask import (
 import os
 import requests
 
-from .errors import NotAuthorizedForUserError
+from .errors import BadUserError
 
 bp = Blueprint('follow_diff', __name__)
 
@@ -25,15 +25,15 @@ def index():
 @bp.route("/diff")
 def diff():
     username = request.args.get('username')
-    type = request.args.get('type')
+    account_type = request.args.get('type')
     errors = []
 
     # validate parameters
     if not username:
         errors.append("Username is required")
-    if not type:
+    if not account_type:
         errors.append("Type is required.")
-    elif type != HATERS_TYPE and type != VICTIMS_TYPE:
+    elif account_type != HATERS_TYPE and account_type != VICTIMS_TYPE:
         errors.append("Invalid account type.")
     if len(errors) > 0:
         return render_template(BASE_TEMPLATE, errors=errors)
@@ -41,8 +41,8 @@ def diff():
     # Retrieve friends and followers from twitter api
     try:
         friends_and_followers = get_friends_and_followers(username)
-    except NotAuthorizedForUserError as notAuthExec:
-        return render_template(BASE_TEMPLATE, errors=[notAuthExec.message])
+    except BadUserError as badUserExec:
+        return render_template(BASE_TEMPLATE, errors=[badUserExec.message])
 
     # Render error if we reach our account number limit
     if len(friends_and_followers[FRIENDS_KEY]) >= MAX_ACCOUNT_NUM:
@@ -51,10 +51,10 @@ def diff():
         errors.append("Unable to retrieve all the followers of this account. Results likely inaccurate.")
 
     # Render appropriate list according to input type
-    if type == HATERS_TYPE:
+    if account_type == HATERS_TYPE:
         they_hate_you = list(set(friends_and_followers[FRIENDS_KEY]) - set(friends_and_followers[FOLLOWERS_KEY]))
         return render_template(RESULT_TEMPLATE, username=username, result=get_user_list(they_hate_you), errors=errors)
-    elif type == VICTIMS_TYPE:
+    elif account_type == VICTIMS_TYPE:
         you_hate_them = list(set(friends_and_followers[FOLLOWERS_KEY]) - set(friends_and_followers[FRIENDS_KEY]))
         return render_template(RESULT_TEMPLATE, username=username, result=get_user_list(you_hate_them), errors=errors)
 
@@ -76,8 +76,13 @@ def get_account_list(account_type, display_name):
     response = requests.request("GET", url, headers=get_bearer_token_header())
     if response.status_code == 401:
         print(response.text)
-        raise NotAuthorizedForUserError(
+        raise BadUserError(
             display_name, "Not authorized to receive {} for user: {}".format(account_type, display_name)
+        )
+    elif response.status_code == 404:
+        print(response.text)
+        raise BadUserError(
+            display_name, "Twitter user not found with display name: {}".format(display_name)
         )
     elif response.status_code != 200:
         raise Exception(
