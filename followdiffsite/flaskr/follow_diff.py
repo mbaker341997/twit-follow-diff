@@ -1,9 +1,10 @@
 from flask import (
-    Blueprint, flash, render_template, request
+    Blueprint, render_template, request
 )
-import json
 import os
 import requests
+
+from .errors import NotAuthorizedForUserError
 
 bp = Blueprint('follow_diff', __name__)
 
@@ -14,6 +15,7 @@ FRIENDS_KEY = "friends"
 BASE_TEMPLATE = 'base.html'
 RESULT_TEMPLATE = 'result.html'
 MAX_ACCOUNT_NUM = 5000
+
 
 @bp.route("/")
 def index():
@@ -37,7 +39,11 @@ def diff():
         return render_template(BASE_TEMPLATE, errors=errors)
 
     # Retrieve friends and followers from twitter api
-    friends_and_followers = get_friends_and_followers(username)
+    try:
+        friends_and_followers = get_friends_and_followers(username)
+    except NotAuthorizedForUserError as notAuthExec:
+        return render_template(BASE_TEMPLATE, errors=[notAuthExec.message])
+
     # Render error if we reach our account number limit
     if len(friends_and_followers[FRIENDS_KEY]) >= MAX_ACCOUNT_NUM:
         errors.append("Unable to retrieve all the accounts this one follows. Results likely inaccurate.")
@@ -60,6 +66,7 @@ def get_bearer_token_header():
     headers = {"Authorization": "Bearer {}".format(os.environ.get("BEARER_TOKEN"))}
     return headers
 
+
 # there's probably a client for this but mehhh
 def get_account_list(account_type, display_name):
     # just grabbing ids cuz it's simpler to run the diff + fewer requets needed to get all the users
@@ -67,7 +74,12 @@ def get_account_list(account_type, display_name):
     print("Requesting {} for user: {}".format(account_type, display_name))
 
     response = requests.request("GET", url, headers=get_bearer_token_header())
-    if response.status_code != 200:
+    if response.status_code == 401:
+        print(response.text)
+        raise NotAuthorizedForUserError(
+            display_name, "Not authorized to receive {} for user: {}".format(account_type, display_name)
+        )
+    elif response.status_code != 200:
         raise Exception(
             "Request returned an error: {} {}".format(
                 response.status_code, response.text
