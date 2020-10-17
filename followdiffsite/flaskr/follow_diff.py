@@ -13,6 +13,7 @@ FOLLOWERS_KEY = "followers"
 FRIENDS_KEY = "friends"
 BASE_TEMPLATE = 'base.html'
 RESULT_TEMPLATE = 'result.html'
+MAX_ACCOUNT_NUM = 5000
 
 @bp.route("/")
 def index():
@@ -23,35 +24,45 @@ def index():
 def diff():
     username = request.args.get('username')
     type = request.args.get('type')
-    error = None
+    errors = []
 
-    # TODO: handle rate limit errors gracefully
+    # validate parameters
     if not username:
-        error = "Username is required."
-    elif not type:
-        error = "Type is required"
-    elif type == HATERS_TYPE:
-        friends_and_followers = get_friends_and_followers(username)
+        errors.append("Username is required")
+    if not type:
+        errors.append("Type is required.")
+    elif type != HATERS_TYPE and type != VICTIMS_TYPE:
+        errors.append("Invalid account type.")
+    if len(errors) > 0:
+        return render_template(BASE_TEMPLATE, errors=errors)
+
+    # Retrieve friends and followers from twitter api
+    friends_and_followers = get_friends_and_followers(username)
+    # Render error if we reach our account number limit
+    if len(friends_and_followers[FRIENDS_KEY]) >= MAX_ACCOUNT_NUM:
+        errors.append("Unable to retrieve all the accounts this one follows. Results likely inaccurate.")
+    if len(friends_and_followers[FOLLOWERS_KEY]) >= MAX_ACCOUNT_NUM:
+        errors.append("Unable to retrieve all the followers of this account. Results likely inaccurate.")
+
+    # Render appropriate list according to input type
+    if type == HATERS_TYPE:
         they_hate_you = list(set(friends_and_followers[FRIENDS_KEY]) - set(friends_and_followers[FOLLOWERS_KEY]))
-        return render_template(RESULT_TEMPLATE, username=username, result=get_user_list(they_hate_you))
+        return render_template(RESULT_TEMPLATE, username=username, result=get_user_list(they_hate_you), errors=errors)
     elif type == VICTIMS_TYPE:
-        friends_and_followers = get_friends_and_followers(username)
         you_hate_them = list(set(friends_and_followers[FOLLOWERS_KEY]) - set(friends_and_followers[FRIENDS_KEY]))
-        return render_template(RESULT_TEMPLATE, username=username, result=get_user_list(you_hate_them))
-    else:
-        error = "Invalid account type"
-    return render_template(BASE_TEMPLATE, error=error)
+        return render_template(RESULT_TEMPLATE, username=username, result=get_user_list(you_hate_them), errors=errors)
 
 
+# TODO: use dot env to load this instead
 # To set your enviornment variables in your terminal run the following line:
 # export 'BEARER_TOKEN'='<your_bearer_token>'
 def get_bearer_token_header():
     headers = {"Authorization": "Bearer {}".format(os.environ.get("BEARER_TOKEN"))}
     return headers
 
-
+# there's probably a client for this but mehhh
 def get_account_list(account_type, display_name):
-    # just grabbing ids cuz it's simpler to run the diff
+    # just grabbing ids cuz it's simpler to run the diff + fewer requets needed to get all the users
     url = "https://api.twitter.com/1.1/{}/ids.json?screen_name={}".format(account_type, display_name)
     print("Requesting {} for user: {}".format(account_type, display_name))
 
@@ -76,7 +87,6 @@ def get_friends_and_followers(username):
 def get_user_info(user_ids):
     user_fields = "description,profile_image_url"
     url = "https://api.twitter.com/2/users?ids={}&user.fields={}".format(user_ids, user_fields)
-    print("Requesting info for users: {}".format(user_ids))
     response = requests.request("GET", url, headers=get_bearer_token_header())
     if response.status_code != 200:
         raise Exception(

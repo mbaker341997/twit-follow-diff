@@ -7,13 +7,14 @@
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <title>TwitFollowDiff</title>
+    <title>TwitDiff</title>
   </head>
   <body>
     <div class="container">
-      <h1><a href="/">TwitFollowDiff</a></h1>
-      <p>See who doesn't follow you back</p>
-      <p>Also see who you don't follow back</p>
+      <h1><a href="/">TwitDiff</a></h1>
+      <p>For the twitter obsessive.</p>
+      <p>See who doesn't follow you back.</p>
+      <p>Also see who you don't follow back.</p>
       <p>We can only process the first 5000 accounts in each list.
         If you're a big account then this won't be very useful for you.</p>
       <form class="form-inline" action="/diff">
@@ -30,8 +31,10 @@
         </select>
         <button type="submit" class="btn btn-primary mb-3">Submit</button>
       </form>
-      {% if error %}
-        <div class="alert alert-danger" role="alert">{{ error }}</div>
+      {% if errors|length > 0 %}
+        {% for error in errors %}
+          <div class="alert alert-danger" role="alert">{{ error }}</div>
+        {% endfor %}
       {% endif %}
       {% block content %}
       {% endblock %}
