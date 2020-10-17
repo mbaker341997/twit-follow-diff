@@ -3,8 +3,9 @@ class Error(Exception):
     pass
 
 
-class NotAuthorizedForUserError(Error):
-    """Exception raised when Twitter does not allow us to retrieve the user's info
+class BadUserError(Error):
+    """Exception raised when Twitter does not allow us to retrieve the user's info by name.
+    If could be because they're private or that username is invalid.
 
     Attributes:
         username -- the twitter user for which we're not authorized.
@@ -14,3 +15,4 @@ class NotAuthorizedForUserError(Error):
     def __init__(self, username, message):
         self.username = username
         self.message = message
+

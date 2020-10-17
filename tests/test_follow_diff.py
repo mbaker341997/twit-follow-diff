@@ -1,0 +1,1 @@
+from flaskr import follow_diff
