@@ -7,7 +7,7 @@
         <div class="card-body">
           <h5>{{ account['name'] }}</h5>
           <p class="card-text"><a href={{ "https://twitter.com/{}".format(account['username']) }}>@{{ account['username'] }}</a></p>
-          <p class="card-text"> {{ account['description'] }} </p>
+          <p class="card-text"> {{ account['description'] | linkify | safe}} </p>
         </div>
       </div>
     {% endfor %}

@@ -1,4 +1,5 @@
 from flask import Flask
+import bleach
 
 
 def create_app(test_config=None):
@@ -12,9 +13,9 @@ def create_app(test_config=None):
     app.register_blueprint(follow_diff.bp)
     app.add_url_rule('/', endpoint='index')
 
-    # a simple page that says hello
-    @app.route('/hello')
-    def hello():
-        return 'Hello, World!'
+    # filter for linkifying
+    @app.template_filter('linkify')
+    def linkify_filter(s):
+        return bleach.linkify(s)
 
     return app

@@ -90,7 +90,7 @@ def get_account_list(account_type, display_name):
         )
     elif response.status_code == 429:
         print(response.text)
-        raise RateLimitExceededError("Unable to retrieve {} for user {}, too many requests made to Twitter API. "
+        raise RateLimitExceededError("Unable to retrieve {} for user {}, Twitter is rate limiting us."
                                      "Try again in ~15 minutes".format(account_type, display_name))
     elif response.status_code != 200:
         raise Exception(
@@ -115,7 +115,7 @@ def get_user_info(user_ids):
     response = requests.request("GET", url, headers=get_bearer_token_header())
     if response.status_code == 429:
         print(response.text)
-        raise RateLimitExceededError("Unable to retrieve user information, too many requests made to Twitter API. "
+        raise RateLimitExceededError("Unable to retrieve user information. Twitter is rate limiting us. "
                                      "Try again in ~15 minutes")
     elif response.status_code != 200:
         raise Exception(
@@ -136,6 +136,6 @@ def get_user_list(user_list):
     chunks = list(divide_into_chunks(user_list))
     data = []
     for chunk in chunks:
-        chunk_string = ",".join(str(id) for id in chunk)
+        chunk_string = ",".join(str(user_id) for user_id in chunk)
         data += get_user_info(chunk_string)
     return {'accounts': data}
