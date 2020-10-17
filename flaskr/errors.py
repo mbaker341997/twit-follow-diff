@@ -16,3 +16,9 @@ class BadUserError(Error):
         self.username = username
         self.message = message
 
+
+class RateLimitExceededError(Error):
+    """Exception raised when we exceed our rate limit with the Twitter API!"""
+
+    def __init__(self, message):
+        self.message = message
