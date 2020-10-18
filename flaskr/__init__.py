@@ -2,10 +2,15 @@ import bleach
 import re
 from flask import Flask
 
+BEARER_TOKEN = 'BEARER_TOKEN'
+
+
 def create_app(test_config=None):
     app = Flask(__name__)
 
-    if test_config is not None:
+    if test_config is None:
+        app.config.from_pyfile('settings.py')
+    else:
         app.config.from_mapping(test_config)
 
     # import follow_diff blueprint

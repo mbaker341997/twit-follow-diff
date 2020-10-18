@@ -1,9 +1,9 @@
 from flask import (
-    Blueprint, render_template, request
+    Blueprint, current_app, render_template, request
 )
-import os
 import requests
 
+from . import BEARER_TOKEN
 from .errors import BadUserError, RateLimitExceededError
 
 bp = Blueprint('follow_diff', __name__)
@@ -63,11 +63,8 @@ def diff():
         return render_template(BASE_TEMPLATE, errors=[rateLimitErr.message])
 
 
-# TODO: use dot env to load this instead
-# To set your enviornment variables in your terminal run the following line:
-# export 'BEARER_TOKEN'='<your_bearer_token>'
 def get_bearer_token_header():
-    headers = {"Authorization": "Bearer {}".format(os.environ.get("BEARER_TOKEN"))}
+    headers = {"Authorization": "Bearer {}".format(current_app.config[BEARER_TOKEN])}
     return headers
 
 
