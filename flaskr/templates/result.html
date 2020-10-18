@@ -7,10 +7,10 @@
   <div class="row">
     {% for account in result['accounts'] %}
       <div class="card m-4" id={{ account['id'] }}>
-        <img src={{ account['profile_image_url'].replace("_normal", "") }} class="card-img-top" alt={{ account['username']}}>
+        <img src="{{ account['profile_image_url'].replace("_normal", "") }}" class="card-img-top" alt={{ account['username']}}>
         <div class="card-body">
           <h5>{{ account['name'] }}</h5>
-          <p class="card-text"><a href={{ "https://twitter.com/{}".format(account['username']) }}>@{{ account['username'] }}</a></p>
+          <p class="card-text"><a href="{{ "https://twitter.com/{}".format(account['username']) }}">@{{ account['username'] }}</a></p>
           <p class="card-text"> {{ account['description'] | linkify | usernamify | safe}} </p>
         </div>
       </div>

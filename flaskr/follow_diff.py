@@ -17,6 +17,8 @@ FRIENDS_KEY = "friends"
 BASE_TEMPLATE = 'base.html'
 RESULT_TEMPLATE = 'result.html'
 MAX_ACCOUNT_NUM = 5000
+ACCOUNT_LIST_API_URL = "https://api.twitter.com/1.1/{}/ids.json?screen_name={}"
+USER_INFO_API_URL = "https://api.twitter.com/2/users?ids={}&user.fields=description,profile_image_url"
 
 
 @bp.route("/")
@@ -77,8 +79,7 @@ def diff():
     except Exception as randomEx:
         print(randomEx)
         return render_template(BASE_TEMPLATE, username=username, account_type=account_type,
-                               errors=["We encountered a random error when attempting to process that. "
-                                       "Wow, weird, try again maybe?"])
+                               errors=[GENERIC_ERROR_MESSAGE_FOR_FRONTEND])
 
 
 def get_bearer_token_header():
@@ -89,28 +90,27 @@ def get_bearer_token_header():
 # Note: we memoize instead of just cache because the arguments matter for what we're retrieving
 @cache.memoize()
 def get_account_list(account_type, display_name):
-    # just grabbing ids cuz it's simpler to run the diff + fewer requets needed to get all the users
-    url = "https://api.twitter.com/1.1/{}/ids.json?screen_name={}".format(account_type, display_name)
+    # just grabbing ids cuz it's simpler to run the diff + fewer requests needed to get all the users
+    url = ACCOUNT_LIST_API_URL.format(account_type, display_name)
     print("Requesting {} for user: {}".format(account_type, display_name))
 
     response = requests.request("GET", url, headers=get_bearer_token_header())
     if response.status_code == 401:
         print(response.text)
         raise BadUserError(
-            display_name, "Not authorized to retrieve {} for user: {}".format(account_type, display_name)
+            display_name, NOT_AUTHORIZED_FOR_USER_TEMPLATE.format(account_type, display_name)
         )
     elif response.status_code == 404:
         print(response.text)
         raise BadUserError(
-            display_name, "Twitter user not found with display name: {}".format(display_name)
+            display_name, USER_NOT_FOUND_TEMPLATE.format(display_name)
         )
     elif response.status_code == 429:
         print(response.text)
-        raise RateLimitExceededError("Unable to retrieve {} for user {}, Twitter is rate limiting us."
-                                     "Try again in ~15 minutes".format(account_type, display_name))
+        raise RateLimitExceededError(RATE_LIMIT_ON_ACCOUNT_LIST_TEMPLATE.format(account_type, display_name))
     elif response.status_code != 200:
         raise Exception(
-            "Request returned an error: {} {}".format(
+            GENERIC_ERROR_TEMPLATE.format(
                 response.status_code, response.text
             )
         )
@@ -127,8 +127,7 @@ def get_friends_and_followers(username):
 
 @cache.memoize()
 def get_user_info(user_ids):
-    user_fields = "description,profile_image_url"
-    url = "https://api.twitter.com/2/users?ids={}&user.fields={}".format(user_ids, user_fields)
+    url = USER_INFO_API_URL.format(user_ids)
     print("Retrieving profile information for users: {}".format(user_ids))
     response = requests.request("GET", url, headers=get_bearer_token_header())
     if response.status_code == 429:
@@ -137,7 +136,7 @@ def get_user_info(user_ids):
                                      "Try again in ~15 minutes")
     elif response.status_code != 200:
         raise Exception(
-            "Request returned an error: {} {}".format(
+            GENERIC_ERROR_TEMPLATE.format(
                 response.status_code, response.text
             )
         )
