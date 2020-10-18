@@ -1,6 +1,10 @@
 import bleach
 import re
 from flask import Flask
+from flask_caching import Cache
+
+# Set up a simple cache with a 5 minute timeout and 500 item threshold
+cache = Cache(config={'CACHE_TYPE': 'simple'})
 
 
 def create_app(test_config=None):
@@ -10,6 +14,9 @@ def create_app(test_config=None):
         app.config.from_pyfile('settings.py')
     else:
         app.config.from_mapping(test_config)
+
+    # Connect cache to our app
+    cache.init_app(app)
 
     # import follow_diff blueprint
     from . import follow_diff

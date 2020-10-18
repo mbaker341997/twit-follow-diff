@@ -1,6 +1,7 @@
 from flask import (
     Blueprint, current_app, render_template, request
 )
+from . import cache
 import requests
 
 from .errors import *
@@ -79,7 +80,8 @@ def get_bearer_token_header():
     return headers
 
 
-# there's probably a client for this but mehhh
+# Note: we memoize instead of just cache because the arguments matter for what we're retrieving
+@cache.memoize()
 def get_account_list(account_type, display_name):
     # just grabbing ids cuz it's simpler to run the diff + fewer requets needed to get all the users
     url = "https://api.twitter.com/1.1/{}/ids.json?screen_name={}".format(account_type, display_name)
@@ -117,9 +119,11 @@ def get_friends_and_followers(username):
     }
 
 
+@cache.memoize()
 def get_user_info(user_ids):
     user_fields = "description,profile_image_url"
     url = "https://api.twitter.com/2/users?ids={}&user.fields={}".format(user_ids, user_fields)
+    print("Retrieving profile information for users: {}".format(user_ids))
     response = requests.request("GET", url, headers=get_bearer_token_header())
     if response.status_code == 429:
         print(response.text)
