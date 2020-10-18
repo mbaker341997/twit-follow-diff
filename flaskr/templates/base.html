@@ -26,8 +26,8 @@
           <input name="username" class="form-control" placeholder="Username" id="username" type='text' {% if username %} value={{username}} {% endif %} required>
         </div>
         <select class="custom-select mr-sm-2 mb-3" id="type" name="type">
-          <option value="haters">They don't follow back</option>
-          <option value="victims">You don't follow back</option>
+          <option value="haters" {% if account_type == "haters" %} selected {% endif %}>They don't follow back</option>
+          <option value="victims" {% if account_type == "victims" %} selected {% endif %}>You don't follow back</option>
         </select>
         <button type="submit" class="btn btn-primary mb-3">Submit</button>
       </form>

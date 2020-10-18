@@ -64,15 +64,21 @@ def diff():
             result = you_hate_them
 
         # Render the result
-        return render_template(RESULT_TEMPLATE, username=username, followers_count=len(followers_set),
-                               friends_count=len(friends_set), haters_count=len(they_hate_you),
-                               victims_count=len(you_hate_them), result=get_user_list(result), errors=errors)
+        return render_template(RESULT_TEMPLATE, username=username, account_type=account_type,
+                               followers_count=len(followers_set), friends_count=len(friends_set),
+                               haters_count=len(they_hate_you), victims_count=len(you_hate_them),
+                               result=get_user_list(result), errors=errors)
 
+    # TODO: maybe combine these into an API Error and just send apiErr.message?
     except BadUserError as badUserErr:
-        return render_template(BASE_TEMPLATE, errors=[badUserErr.message])
+        return render_template(BASE_TEMPLATE, username=username, account_type=account_type, errors=[badUserErr.message])
     except RateLimitExceededError as rateLimitErr:
-        # TODO: use the generic error page for this
-        return render_template(BASE_TEMPLATE, errors=[rateLimitErr.message])
+        return render_template(BASE_TEMPLATE, username=username, account_type=account_type, errors=[rateLimitErr.message])
+    except Exception as randomEx:
+        print(randomEx)
+        return render_template(BASE_TEMPLATE, username=username, account_type=account_type,
+                               errors=["We encountered a random error when attempting to process that. "
+                                       "Wow, weird, try again maybe?"])
 
 
 def get_bearer_token_header():
@@ -139,6 +145,8 @@ def get_user_info(user_ids):
 
 
 # user info api only allows 100 user ids at a time, divide into chunks and pass
+# TODO: idea, we pick out and cache accounts we've seen before. we make the request in batches but
+#  we could strategize which ones we batch?
 def divide_into_chunks(user_ids, chunk_size=100):
     for i in range(0, len(user_ids), chunk_size):
         yield user_ids[i:i+chunk_size]

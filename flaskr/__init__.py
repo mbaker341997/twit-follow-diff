@@ -1,6 +1,6 @@
 import bleach
 import re
-from flask import Flask
+from flask import Flask, render_template
 from flask_caching import Cache
 
 # Set up a simple cache with a 5 minute timeout and 500 item threshold
@@ -22,6 +22,11 @@ def create_app(test_config=None):
     from . import follow_diff
     app.register_blueprint(follow_diff.bp)
     app.add_url_rule('/', endpoint='index')
+
+    # 404 error handler
+    @app.errorhandler(404)
+    def not_found_handler(e):
+        return render_template('not_found.html')
 
     # filter for linkifying
     @app.template_filter('linkify')
