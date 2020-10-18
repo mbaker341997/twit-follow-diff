@@ -5,7 +5,8 @@ from flaskr import create_app
 @pytest.fixture
 def app():
     return create_app({
-        'TESTING': True
+        'TESTING': True,
+        'BEARER_TOKEN': 'dummyValue'
     })
 
 

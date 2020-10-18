@@ -1,5 +1,9 @@
 {% extends 'base.html' %}
 {% block content %}
+  <p>Total Followers: {{ followers_count }}</p>
+  <p>Total Followed Accounts: {{ friends_count }}</p>
+  <p>Total you follow but they don't follow back: {{ haters_count }}</p>
+  <p>Total that follow you but you don't follow back: {{ victims_count }}</p>
   <div class="row">
     {% for account in result['accounts'] %}
       <div class="card m-4" id={{ account['id'] }}>

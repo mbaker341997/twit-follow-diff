@@ -5,6 +5,7 @@ chardet==3.0.4
 click==7.1.2
 coverage==5.3
 Flask==1.1.2
+-e git+https://github.com/mbakerperson/twit-follow-diff.git@ca0039b12e453391c524f912c0028f08346fcf86#egg=flaskr
 idna==2.10
 importlib-metadata==2.0.0
 iniconfig==1.1.1

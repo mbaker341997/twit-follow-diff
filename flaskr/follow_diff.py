@@ -3,11 +3,12 @@ from flask import (
 )
 import requests
 
-from . import BEARER_TOKEN
-from .errors import BadUserError, RateLimitExceededError
+from .errors import *
 
 bp = Blueprint('follow_diff', __name__)
 
+USERNAME_KEY = 'username'
+TYPE_KEY = 'type'
 HATERS_TYPE = 'haters'
 VICTIMS_TYPE = 'victims'
 FOLLOWERS_KEY = "followers"
@@ -24,38 +25,48 @@ def index():
 
 @bp.route("/diff")
 def diff():
-    username = request.args.get('username')
-    account_type = request.args.get('type')
+    username = request.args.get(USERNAME_KEY)
+    account_type = request.args.get(TYPE_KEY)
     errors = []
 
     # validate parameters
     if not username:
-        errors.append("Username is required")
+        errors.append(MISSING_USERNAME_ERROR_MESSAGE)
     if not account_type:
-        errors.append("Type is required.")
+        errors.append(MISSING_TYPE_ERROR_MESSAGE)
     elif account_type != HATERS_TYPE and account_type != VICTIMS_TYPE:
-        errors.append("Invalid account type.")
+        errors.append(INVALID_ACCOUNT_TYPE_ERROR_MESSAGE)
     if len(errors) > 0:
         return render_template(BASE_TEMPLATE, errors=errors)
 
     try:
         # Retrieve friends and followers from twitter api
         friends_and_followers = get_friends_and_followers(username)
+
         # Render error if we reach our account number limit
         if len(friends_and_followers[FRIENDS_KEY]) >= MAX_ACCOUNT_NUM:
-            errors.append("Unable to retrieve all the accounts this one follows. Results likely inaccurate.")
+            errors.append(TOO_MANY_FOLLOWS_ERROR_MESSAGE)
         if len(friends_and_followers[FOLLOWERS_KEY]) >= MAX_ACCOUNT_NUM:
-            errors.append("Unable to retrieve all the followers of this account. Results likely inaccurate.")
+            errors.append(TOO_MANY_FOLLOWERS_ERROR_MESSAGE)
 
-        # Render appropriate list according to input type
+        # Run diff on friends and followers
+        friends_set = set(friends_and_followers[FRIENDS_KEY])
+        followers_set = set(friends_and_followers[FOLLOWERS_KEY])
+        they_hate_you = list(friends_set - followers_set)
+        you_hate_them = list(followers_set - friends_set)
+        result = []
+
+        # Decide which list to render
         if account_type == HATERS_TYPE:
-            they_hate_you = list(set(friends_and_followers[FRIENDS_KEY]) - set(friends_and_followers[FOLLOWERS_KEY]))
-            return render_template(RESULT_TEMPLATE, username=username,
-                                   result=get_user_list(they_hate_you), errors=errors)
+            result = they_hate_you
         elif account_type == VICTIMS_TYPE:
-            you_hate_them = list(set(friends_and_followers[FOLLOWERS_KEY]) - set(friends_and_followers[FRIENDS_KEY]))
-            return render_template(RESULT_TEMPLATE, username=username,
-                                   result=get_user_list(you_hate_them), errors=errors)
+            result = you_hate_them
+
+        # Render the result
+        return render_template(RESULT_TEMPLATE, username=username, followers_count=len(followers_set),
+                               friends_count=len(friends_set), haters_count=len(they_hate_you),
+                               victims_count=len(you_hate_them), result=get_user_list(result), errors=errors)
+
     except BadUserError as badUserErr:
         return render_template(BASE_TEMPLATE, errors=[badUserErr.message])
     except RateLimitExceededError as rateLimitErr:
@@ -64,7 +75,7 @@ def diff():
 
 
 def get_bearer_token_header():
-    headers = {"Authorization": "Bearer {}".format(current_app.config[BEARER_TOKEN])}
+    headers = {"Authorization": "Bearer {}".format(current_app.config['BEARER_TOKEN'])}
     return headers
 
 

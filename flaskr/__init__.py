@@ -2,8 +2,6 @@ import bleach
 import re
 from flask import Flask
 
-BEARER_TOKEN = 'BEARER_TOKEN'
-
 
 def create_app(test_config=None):
     app = Flask(__name__)

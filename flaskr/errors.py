@@ -1,3 +1,10 @@
+MISSING_USERNAME_ERROR_MESSAGE = 'Username is required.'
+MISSING_TYPE_ERROR_MESSAGE = 'Type is required.'
+INVALID_ACCOUNT_TYPE_ERROR_MESSAGE = 'Invalid account type.'
+TOO_MANY_FOLLOWS_ERROR_MESSAGE = 'Unable to retrieve all the accounts this one follows. Results likely inaccurate.'
+TOO_MANY_FOLLOWERS_ERROR_MESSAGE = 'Unable to retrieve all the followers of this account. Results likely inaccurate.'
+
+
 class Error(Exception):
     """Base class for other exceptions"""
     pass
